@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Super Star Addition — Head Tilt Edition</title>
+    <style>
+      :root {
+        font-family: "Trebuchet MS", Arial, sans-serif;
+        color: #28345a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(130deg, #c8f5ff, #fff2b5 53%, #ffd6ef);
+        min-height: 100dvh;
+      }
+      .app {
+        max-width: 1100px;
+        margin: auto;
+        min-height: 100dvh;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      header,
+      .tools,
+      .stats,
+      .answers,
+      .bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        font-size: clamp(24px, 4vw, 42px);
+        color: #6944bb;
+        margin: 0;
+        text-shadow: 2px 2px white;
+      }
+      .pill {
+        background: white;
+        border-radius: 99px;
+        padding: 9px 15px;
+        font-weight: 900;
+        box-shadow: 0 3px 0 #d7c9f4;
+      }
+      button {
+        font: inherit;
+        font-weight: 900;
+        cursor: pointer;
+        border: 0;
+        border-radius: 18px;
+        padding: 12px 18px;
+        touch-action: manipulation;
+      }
+      button:focus-visible {
+        outline: 4px solid #174fcf;
+        outline-offset: 3px;
+      }
+      .primary {
+        background: #6a4ce4;
+        color: white;
+        box-shadow: 0 5px 0 #4327a4;
+      }
+      .secondary {
+        background: white;
+        color: #5536a4;
+        border: 2px solid #a88ce5;
+      }
+      .board {
+        background: #ffffffed;
+        border-radius: 30px;
+        padding: clamp(12px, 2.5vw, 24px);
+        box-shadow: 0 8px 0 #cbb9f2;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        gap: 10px;
+        text-align: center;
+      }
+      .prompt {
+        font-weight: 900;
+        font-size: clamp(19px, 3vw, 30px);
+      }
+      .equation {
+        font-size: clamp(40px, 7vw, 72px);
+        font-weight: 1000;
+        color: #7650d6;
+        line-height: 1.05;
+      }
+      .pictures {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(6px, 2vw, 24px);
+        flex-wrap: wrap;
+      }
+      .objects {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        max-width: 40%;
+        min-width: 60px;
+      }
+      .objects span {
+        font-size: clamp(25px, 3.8vw, 46px);
+      }
+      .plus {
+        font-size: clamp(30px, 5vw, 55px);
+        font-weight: 900;
+        color: #f17d34;
+      }
+      .answers {
+        flex-wrap: nowrap;
+        gap: clamp(8px, 2vw, 24px);
+      }
+      .answer {
+        flex: 1;
+        min-width: 0;
+        border: 5px solid #e7d9ff;
+        background: #f5eeff;
+        border-radius: 26px;
+        padding: clamp(10px, 2vw, 22px) 6px;
+        box-shadow: 0 6px 0 #c8b3ed;
+        transition:
+          transform 0.15s,
+          border-color 0.15s;
+      }
+      .answer strong {
+        display: block;
+        font-size: clamp(36px, 7vw, 76px);
+        color: #5939b9;
+      }
+      .answer small {
+        font-size: clamp(13px, 2vw, 20px);
+      }
+      .answer.active {
+        border-color: #ffad18;
+        background: #fff0a3;
+        transform: scale(1.035);
+      }
+      .answer.correct {
+        background: #baf5bf;
+        border-color: #24ae5c;
+      }
+      .answer.wrong {
+        background: #ffd1d8;
+        border-color: #f04d69;
+      }
+      .message {
+        font-size: clamp(17px, 2.6vw, 26px);
+        font-weight: 900;
+        min-height: 1.5em;
+      }
+      .sensorBar {
+        background: #fff9;
+        border-radius: 20px;
+        padding: 10px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .preview {
+        position: relative;
+        width: 145px;
+        height: 100px;
+        background: #28345a;
+        border-radius: 14px;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .sensorIcon {
+        display: grid;
+        place-items: center;
+        height: 100%;
+        font-size: 48px;
+      }
+      .preview .tag {
+        position: absolute;
+        bottom: 3px;
+        left: 4px;
+        color: white;
+        background: #0009;
+        font-size: 11px;
+        padding: 2px 5px;
+        border-radius: 4px;
+      }
+      .sensorText {
+        flex: 1;
+        min-width: 200px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .sensorText p {
+        margin: 4px 0;
+      }
+      .sensorText .status {
+        color: #5834ad;
+      }
+      .bottom {
+        justify-content: center;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: #281d5ec9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+        z-index: 5;
+      }
+      .modal {
+        background: white;
+        border-radius: 30px;
+        max-width: 580px;
+        width: 100%;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 10px 0 #bba4ed;
+      }
+      .modal h2 {
+        font-size: clamp(26px, 5vw, 42px);
+        color: #6944bb;
+      }
+      .modal p {
+        font-size: 19px;
+        line-height: 1.4;
+      }
+      .modal .primary {
+        font-size: 22px;
+        margin: 10px;
+      }
+      .confetti {
+        position: fixed;
+        pointer-events: none;
+        z-index: 8;
+        width: 10px;
+        height: 16px;
+        animation: fall 1.8s linear forwards;
+      }
+      @keyframes fall {
+        from {
+          transform: translateY(-10vh) rotate(0deg);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(110vh) rotate(780deg);
+          opacity: 0;
+        }
+      }
+      @media (max-height: 760px) {
+        .app {
+          gap: 5px;
+          padding: 6px;
+        }
+        .board {
+          gap: 3px;
+          padding: 10px;
+        }
+        .preview {
+          height: 70px;
+          width: 105px;
+        }
+        .sensorBar {
+          padding: 5px;
+        }
+        .answer {
+          padding: 7px 4px;
+        }
+        .objects span {
+          font-size: clamp(23px, 3vw, 35px);
+        }
+      }
+      @media (max-width: 500px) {
+        .sensorBar {
+          gap: 7px;
+        }
+        .preview {
+          width: 92px;
+          height: 75px;
+        }
+        .sensorText {
+          min-width: 150px;
+          font-size: 12px;
+        }
+        .tools button {
+          padding: 8px;
+        }
+        .pill {
+          padding: 7px 9px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>🌟 Super Star Addition!</h1>
+        <button class="secondary" id="soundBtn">🔊 Sound ON</button>
+      </header>
+      <div class="stats">
+        <span class="pill" id="progress">Question 1 / 20</span
+        ><span class="pill" id="prizes">🏆 Prizes: 0</span
+        ><span class="pill">➕ Answers up to 9</span>
+      </div>
+      <section class="board">
+        <div class="prompt">Count the pictures. What is the answer?</div>
+        <div class="pictures">
+          <div class="objects" id="leftObjects"></div>
+          <div class="plus">+</div>
+          <div class="objects" id="rightObjects"></div>
+        </div>
+        <div class="equation" id="equation">3 + 2 = ?</div>
+        <div class="answers">
+          <button
+            class="answer"
+            id="answerLeft"
+            aria-label="Choose left answer"
+          >
+            <small>⬅️ TILT LEFT</small
+            ><strong id="leftNumber">4</strong></button
+          ><button
+            class="answer"
+            id="answerRight"
+            aria-label="Choose right answer"
+          >
+            <small>TILT RIGHT ➡️</small><strong id="rightNumber">5</strong>
+          </button>
+        </div>
+        <div class="message" id="message" aria-live="polite">
+          Tilt your head, hold, and win a prize! 🎁
+        </div>
+      </section>
+      <section class="sensorBar">
+        <div class="preview" aria-hidden="true">
+          <span class="sensorIcon">📱</span
+          ><span class="tag">Works offline</span>
+        </div>
+        <div class="sensorText">
+          <p class="status" id="sensorStatus">
+            📱 Tilt sensor is OFF — click Enable Tilt
+          </p>
+          <p id="tiltStatus">
+            On a phone or tablet, hold it straight and tilt left or right for
+            about 1 second.
+          </p>
+          <p>🖱️ Click an answer on any device. No camera or internet needed.</p>
+        </div>
+        <div class="tools">
+          <button class="primary" id="sensorBtn">📱 Enable Tilt</button
+          ><button class="secondary" id="calibrateBtn">🎯 Center</button
+          ><button class="secondary" id="swapBtn">↔️ Swap tilt</button>
+        </div>
+      </section>
+      <div class="bottom">
+        <button class="secondary" id="restartBtn">🔄 Restart game</button
+        ><button class="secondary" id="volumeBtn">
+          📣 Test celebration sound
+        </button>
+      </div>
+    </main>
+    <div class="overlay" id="intro">
+      <div class="modal">
+        <h2>🎉 Head Tilt Addition! 🎉</h2>
+        <p>
+          20 questions for 20 superstars! Tilt your head <b>LEFT</b> or
+          <b>RIGHT</b> to choose one of two answers. Hold your tilt for about a
+          second. Every correct answer wins a prize, confetti, and a BIG
+          celebration!
+        </p>
+        <p>
+          📱 Tilt mode works offline on phones and tablets. If your device does
+          not provide a tilt sensor, you can always click the answers.
+        </p>
+        <button class="primary" id="startBtn">🌟 LET'S PLAY! 🌟</button>
+      </div>
+    </div>
+    <div class="overlay hidden" id="finish">
+      <div class="modal">
+        <h2>🏆 AMAZING, SUPERSTARS! 🏆</h2>
+        <p>You've finished all 20 addition questions!</p>
+        <p id="finishText"></p>
+        <button class="primary" id="playAgainBtn">🎈 PLAY AGAIN!</button>
+      </div>
+    </div>
+    <script>
+      "use strict";
+      const $ = (id) => document.getElementById(id);
+      let questions = [],
+        index = 0,
+        score = 0,
+        locked = false,
+        started = false,
+        soundOn = true,
+        audioCtx = null,
+        neutralAngle = 0,
+        swap = true,
+        tiltSince = 0,
+        lastDirection = "",
+        lastAngle = 0,
+        sensorOn = false;
+      const emojis = [
+        "🍎",
+        "⭐",
+        "🦋",
+        "🍓",
+        "🌸",
+        "🐠",
+        "🍪",
+        "🍊",
+        "🐝",
+        "🎈",
+      ];
+      function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+      function generate() {
+        let pool = [];
+        for (let a = 0; a <= 9; a++)
+          for (let b = 0; b <= 9 - a; b++) if (a + b >= 2) pool.push({ a, b });
+        shuffle(pool);
+        questions = pool.slice(0, 20).map((q, i) => {
+          let total = q.a + q.b;
+          let wrong =
+            total +
+            [1, 2, 3][Math.floor(Math.random() * 3)] *
+              (Math.random() < 0.5 ? -1 : 1);
+          if (wrong < 0 || wrong > 9 || wrong === total)
+            wrong = total === 9 ? 8 : total + 1;
+          let left = Math.random() < 0.5 ? total : wrong;
+          return {
+            ...q,
+            total,
+            left,
+            right: left === total ? wrong : total,
+            emoji: emojis[i % emojis.length],
+          };
+        });
+      }
+      function show() {
+        locked = false;
+        lastDirection = "";
+        tiltSince = 0;
+        const q = questions[index];
+        $("progress").textContent = `Question ${index + 1} / 20`;
+        $("prizes").textContent = `🏆 Prizes: ${score}`;
+        $("equation").textContent = `${q.a} + ${q.b} = ?`;
+        $("leftObjects").innerHTML =
+          Array.from({ length: q.a }, () => `<span>${q.emoji}</span>`).join(
+            "",
+          ) || "<span>0</span>";
+        $("rightObjects").innerHTML =
+          Array.from({ length: q.b }, () => `<span>${q.emoji}</span>`).join(
+            "",
+          ) || "<span>0</span>";
+        $("leftNumber").textContent = q.left;
+        $("rightNumber").textContent = q.right;
+        for (const id of ["answerLeft", "answerRight"])
+          $(id).className = "answer";
+        $("message").textContent =
+          "🤔 Tilt LEFT or RIGHT and hold for 1 second!";
+      }
+      function burst(count = 80) {
+        const colors = [
+          "#f43f5e",
+          "#fbbf24",
+          "#22c55e",
+          "#38bdf8",
+          "#a855f7",
+          "#fb923c",
+        ];
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement("div");
+          p.className = "confetti";
+          p.style.left = Math.random() * 100 + "vw";
+          p.style.top = -Math.random() * 40 + "vh";
+          p.style.background = colors[i % colors.length];
+          p.style.animationDelay = Math.random() * 0.5 + "s";
+          p.style.animationDuration = 1.3 + Math.random() * 1.1 + "s";
+          document.body.appendChild(p);
+          setTimeout(() => p.remove(), 3000);
+        }
+      }
+      function audio() {
+        if (!soundOn) return null;
+        try {
+          audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          return audioCtx;
+        } catch {
+          return null;
+        }
+      }
+      function tone(ctx, freq, time, duration, volume = 0.18, type = "sine") {
+        const o = ctx.createOscillator(),
+          g = ctx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, time);
+        g.gain.setValueAtTime(0.0001, time);
+        g.gain.exponentialRampToValueAtTime(volume, time + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+        o.connect(g).connect(ctx.destination);
+        o.start(time);
+        o.stop(time + duration + 0.03);
+      }
+      function celebrate() {
+        const ctx = audio();
+        if (!ctx) return;
+        const t = ctx.currentTime + 0.04;
+        [523, 659, 784, 1047, 1319].forEach((f, i) =>
+          tone(ctx, f, t + i * 0.105, 0.28, 0.23, "triangle"),
+        );
+        [392, 523, 659, 784].forEach((f) =>
+          tone(ctx, f, t + 0.62, 0.85, 0.095, "sine"),
+        );
+        for (let i = 0; i < 9; i++) {
+          tone(
+            ctx,
+            700 + Math.random() * 850,
+            t + 0.1 + i * 0.09,
+            0.12,
+            0.045,
+            "triangle",
+          );
+        }
+      }
+      function wrongSound() {
+        const ctx = audio();
+        if (ctx) {
+          const t = ctx.currentTime;
+          tone(ctx, 340, t, 0.14, 0.12);
+          tone(ctx, 270, t + 0.15, 0.22, 0.11);
+        }
+      }
+      function answer(side) {
+        if (!started || locked) return;
+        const q = questions[index],
+          btn = $(side === "left" ? "answerLeft" : "answerRight");
+        if ((side === "left" ? q.left : q.right) === q.total) {
+          locked = true;
+          score++;
+          btn.classList.add("correct");
+          $("prizes").textContent = `🏆 Prizes: ${score}`;
+          $("message").textContent = `🎁 CORRECT! YOU WON PRIZE ${score}! 🎉`;
+          celebrate();
+          burst();
+          setTimeout(() => {
+            if (index === 19) {
+              $("finishText").textContent =
+                `🌟 ${score} shiny prizes earned! 🌟`;
+              burst(150);
+              celebrate();
+              $("finish").classList.remove("hidden");
+              started = false;
+            } else {
+              index++;
+              show();
+            }
+          }, 1900);
+        } else {
+          btn.classList.add("wrong");
+          $("message").textContent = "💗 TRY AGAIN! You can do it!";
+          wrongSound();
+          setTimeout(() => btn.classList.remove("wrong"), 700);
+          lastDirection = "";
+          tiltSince = 0;
+        }
+      }
+      function reset() {
+        generate();
+        index = 0;
+        score = 0;
+        started = true;
+        $("finish").classList.add("hidden");
+        $("intro").classList.add("hidden");
+        show();
+        audio();
+      }
+      $("startBtn").onclick = reset;
+      $("playAgainBtn").onclick = reset;
+      $("restartBtn").onclick = reset;
+      $("answerLeft").onclick = () => answer("left");
+      $("answerRight").onclick = () => answer("right");
+      $("soundBtn").onclick = () => {
+        soundOn = !soundOn;
+        $("soundBtn").textContent = soundOn ? "🔊 Sound ON" : "🔇 Sound OFF";
+        if (soundOn) celebrate();
+      };
+      $("volumeBtn").onclick = () => {
+        celebrate();
+        burst(30);
+      };
+      function status(t) {
+        $("sensorStatus").textContent = t;
+      }
+      function updateTilt(angle) {
+        if (typeof angle !== "number") return;
+        lastAngle = angle;
+        if (!sensorOn) return;
+        const delta = (angle - neutralAngle) * (swap ? -1 : 1);
+        let direction = delta > 13 ? "right" : delta < -13 ? "left" : "";
+        if (!started || locked) {
+          lastDirection = "";
+          tiltSince = 0;
+          return;
+        }
+        if (!direction) {
+          lastDirection = "";
+          tiltSince = 0;
+          $("tiltStatus").textContent =
+            `🙂 Centered (${Math.round(delta)}°). Tilt left or right.`;
+          return;
+        }
+        if (direction !== lastDirection) {
+          lastDirection = direction;
+          tiltSince = Date.now();
+        }
+        const elapsed = Date.now() - tiltSince;
+        const pct = Math.min(100, Math.round((elapsed / 950) * 100));
+        $("tiltStatus").textContent =
+          `${direction === "left" ? "⬅️ LEFT" : "RIGHT ➡️"} — Hold! ${pct}%`;
+        $("answerLeft").classList.toggle("active", direction === "left");
+        $("answerRight").classList.toggle("active", direction === "right");
+        if (elapsed >= 950) {
+          lastDirection = "";
+          tiltSince = 0;
+          answer(direction);
+        }
+      }
+      function onDeviceOrientation(event) {
+        updateTilt(event.gamma);
+      }
+      async function startSensor() {
+        if (!("DeviceOrientationEvent" in window)) {
+          status("ℹ️ Tilt sensor unavailable here — click answers instead.");
+          return;
+        }
+        try {
+          if (typeof DeviceOrientationEvent.requestPermission === "function") {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission !== "granted") {
+              throw new Error("Tilt sensor permission was not granted.");
+            }
+          }
+          window.addEventListener("deviceorientation", onDeviceOrientation);
+          sensorOn = true;
+          $("sensorBtn").textContent = "⏹ Stop Tilt";
+          status("✅ Tilt sensor ON! Hold the device straight first.");
+        } catch (e) {
+          status("⚠️ " + e.message + " — Click answers as backup.");
+        }
+      }
+      function stopSensor() {
+        sensorOn = false;
+        window.removeEventListener("deviceorientation", onDeviceOrientation);
+        $("sensorBtn").textContent = "📱 Enable Tilt";
+        status("📱 Tilt sensor OFF — click Enable Tilt");
+        lastDirection = "";
+        tiltSince = 0;
+      }
+      $("sensorBtn").onclick = async () => {
+        if (sensorOn) {
+          stopSensor();
+          return;
+        }
+        await startSensor();
+      };
+      $("calibrateBtn").onclick = () => {
+        neutralAngle = lastAngle;
+        lastDirection = "";
+        tiltSince = 0;
+        $("tiltStatus").textContent =
+          "🎯 Center saved! Now tilt left or right.";
+      };
+      $("swapBtn").onclick = () => {
+        swap = !swap;
+        lastDirection = "";
+        tiltSince = 0;
+        $("tiltStatus").textContent = "↔️ Tilt directions swapped. Try again!";
+      };
+      window.addEventListener("pagehide", stopSensor);
+    </script>
+  </body>
+</html>
