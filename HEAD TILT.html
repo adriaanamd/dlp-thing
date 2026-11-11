@@ -181,11 +181,11 @@
         overflow: hidden;
         flex-shrink: 0;
       }
-      .sensorIcon {
-        display: grid;
-        place-items: center;
+      .preview video {
+        width: 100%;
         height: 100%;
-        font-size: 48px;
+        object-fit: cover;
+        transform: scaleX(-1);
       }
       .preview .tag {
         position: absolute;
@@ -348,22 +348,25 @@
         </div>
       </section>
       <section class="sensorBar">
-        <div class="preview" aria-hidden="true">
-          <span class="sensorIcon">📱</span
-          ><span class="tag">Works offline</span>
+        <div class="preview">
+          <video id="video" autoplay playsinline muted></video
+          ><span class="tag">Stays on device</span>
         </div>
         <div class="sensorText">
-          <p class="status" id="sensorStatus">
-            📱 Tilt sensor is OFF — click Enable Tilt
+          <p class="status" id="mediaStatus">
+            📷 Camera is OFF — click Enable Camera
           </p>
           <p id="tiltStatus">
-            On a phone or tablet, hold it straight and tilt left or right for
-            about 1 second.
+            Face the camera, hold your head straight, then tilt left or right
+            for about 1 second.
           </p>
-          <p>🖱️ Click an answer on any device. No camera or internet needed.</p>
+          <p>
+            🖱️ Click an answer on any device. Camera assets are bundled offline.
+          </p>
         </div>
         <div class="tools">
-          <button class="primary" id="sensorBtn">📱 Enable Tilt</button
+          <button class="primary" id="cameraBtn">📷 Enable Camera</button
+          ><button class="secondary" id="sensorBtn">📱 Enable Tilt</button
           ><button class="secondary" id="calibrateBtn">🎯 Center</button
           ><button class="secondary" id="swapBtn">↔️ Swap tilt</button>
         </div>
@@ -385,8 +388,9 @@
           celebration!
         </p>
         <p>
-          📱 Tilt mode works offline on phones and tablets. If your device does
-          not provide a tilt sensor, you can always click the answers.
+          📷 Camera mode works offline: the face-tracking files are bundled with
+          this page. No video is uploaded or recorded. On phones/tablets, tilt
+          mode is also available. You can always click answers.
         </p>
         <button class="primary" id="startBtn">🌟 LET'S PLAY! 🌟</button>
       </div>
@@ -399,6 +403,7 @@
         <button class="primary" id="playAgainBtn">🎈 PLAY AGAIN!</button>
       </div>
     </div>
+    <script src="./vendor/face_mesh/face_mesh.js"></script>
     <script>
       "use strict";
       const $ = (id) => document.getElementById(id);
@@ -409,11 +414,16 @@
         started = false,
         soundOn = true,
         audioCtx = null,
+        faceMesh = null,
+        stream = null,
+        processing = false,
         neutralAngle = 0,
         swap = true,
         tiltSince = 0,
         lastDirection = "",
         lastAngle = 0,
+        lastFaceAt = 0,
+        cameraOn = false,
         sensorOn = false;
       const emojis = [
         "🍎",
@@ -611,12 +621,29 @@
         burst(30);
       };
       function status(t) {
-        $("sensorStatus").textContent = t;
+        $("mediaStatus").textContent = t;
+      }
+      async function loadMesh() {
+        if (faceMesh) return;
+        if (!window.FaceMesh) {
+          throw new Error("Local face tracker is unavailable.");
+        }
+        status("⏳ Loading local face tracker...");
+        faceMesh = new FaceMesh({
+          locateFile: (file) => `./vendor/face_mesh/${file}`,
+        });
+        faceMesh.setOptions({
+          maxNumFaces: 1,
+          refineLandmarks: false,
+          minDetectionConfidence: 0.55,
+          minTrackingConfidence: 0.55,
+        });
+        faceMesh.onResults(onFace);
       }
       function updateTilt(angle) {
         if (typeof angle !== "number") return;
         lastAngle = angle;
-        if (!sensorOn) return;
+        if (!cameraOn && !sensorOn) return;
         const delta = (angle - neutralAngle) * (swap ? -1 : 1);
         let direction = delta > 13 ? "right" : delta < -13 ? "left" : "";
         if (!started || locked) {
@@ -647,6 +674,79 @@
           answer(direction);
         }
       }
+      function onFace(result) {
+        const landmarks = result.multiFaceLandmarks?.[0];
+        if (!landmarks) {
+          $("tiltStatus").textContent = "👀 Please face the camera.";
+          lastDirection = "";
+          tiltSince = 0;
+          return;
+        }
+        lastFaceAt = Date.now();
+        const a = landmarks[33];
+        const b = landmarks[263];
+        const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+        updateTilt(angle);
+      }
+      async function track() {
+        while (cameraOn && stream) {
+          if (!processing) {
+            processing = true;
+            try {
+              await faceMesh.send({ image: $("video") });
+            } catch (e) {
+              status("⚠️ Camera tracking stopped: " + e.message);
+              stopCamera();
+              break;
+            } finally {
+              processing = false;
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 55));
+        }
+      }
+      function stopCamera() {
+        cameraOn = false;
+        stream?.getTracks().forEach((track) => track.stop());
+        stream = null;
+        $("video").srcObject = null;
+        $("cameraBtn").textContent = "📷 Enable Camera";
+        lastDirection = "";
+        tiltSince = 0;
+      }
+      $("cameraBtn").onclick = async () => {
+        if (cameraOn) {
+          stopCamera();
+          status("📷 Camera OFF — click Enable Camera");
+          return;
+        }
+        try {
+          if (!navigator.mediaDevices?.getUserMedia) {
+            throw new Error("Camera requires HTTPS or localhost.");
+          }
+          $("cameraBtn").disabled = true;
+          await loadMesh();
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
+            audio: false,
+          });
+          $("video").srcObject = stream;
+          await $("video").play();
+          cameraOn = true;
+          $("cameraBtn").textContent = "⏹ Stop Camera";
+          status("✅ Camera ON! Keep your face in view.");
+          track();
+        } catch (e) {
+          status("⚠️ " + e.message + " — Click answers as backup.");
+          stopCamera();
+        } finally {
+          $("cameraBtn").disabled = false;
+        }
+      };
       function onDeviceOrientation(event) {
         updateTilt(event.gamma);
       }
@@ -674,7 +774,7 @@
         sensorOn = false;
         window.removeEventListener("deviceorientation", onDeviceOrientation);
         $("sensorBtn").textContent = "📱 Enable Tilt";
-        status("📱 Tilt sensor OFF — click Enable Tilt");
+        if (!cameraOn) status("📱 Tilt sensor OFF — click Enable Tilt");
         lastDirection = "";
         tiltSince = 0;
       }
@@ -698,7 +798,10 @@
         tiltSince = 0;
         $("tiltStatus").textContent = "↔️ Tilt directions swapped. Try again!";
       };
-      window.addEventListener("pagehide", stopSensor);
+      window.addEventListener("pagehide", () => {
+        stopCamera();
+        stopSensor();
+      });
     </script>
   </body>
 </html>
