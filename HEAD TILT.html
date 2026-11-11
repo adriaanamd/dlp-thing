@@ -570,8 +570,10 @@
           locked = true;
           score++;
           btn.classList.add("correct");
+          $("equation").textContent = `${q.a} + ${q.b} = ${q.total}`;
           $("prizes").textContent = `🏆 Prizes: ${score}`;
-          $("message").textContent = `🎁 CORRECT! YOU WON PRIZE ${score}! 🎉`;
+          $("message").textContent =
+            `🎁 CORRECT! ${q.a} + ${q.b} = ${q.total} — YOU WON PRIZE ${score}! 🎉`;
           celebrate();
           burst();
           setTimeout(() => {
