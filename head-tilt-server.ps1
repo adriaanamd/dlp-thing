@@ -43,7 +43,16 @@ $rootWithSlash = $root.TrimEnd([System.IO.Path]::DirectorySeparatorChar) +
   [System.IO.Path]::DirectorySeparatorChar
 
 try {
-  $listener.Start()
+  try {
+    $listener.Start()
+  } catch [System.Net.Sockets.SocketException] {
+    $listener = [System.Net.Sockets.TcpListener]::new(
+      [System.Net.IPAddress]::Loopback,
+      0
+    )
+    $listener.Start()
+    $port = $listener.LocalEndpoint.Port
+  }
   $url = "http://localhost:$port/HEAD%20TILT.html"
   Write-Host "Opening Head Tilt at $url"
   Write-Host "Leave this window open while the game is running. Press Ctrl+C to stop."
