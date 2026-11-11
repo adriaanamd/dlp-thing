@@ -437,6 +437,7 @@
         "🐝",
         "🎈",
       ];
+      const answerRevealDelay = 2800;
       function shuffle(a) {
         for (let i = a.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -588,7 +589,7 @@
               index++;
               show();
             }
-          }, 1900);
+          }, answerRevealDelay);
         } else {
           btn.classList.add("wrong");
           $("message").textContent = "💗 TRY AGAIN! You can do it!";
